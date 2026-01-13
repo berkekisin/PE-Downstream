@@ -14,6 +14,7 @@ from GNNPlus.encoder.type_dict_encoder import TypeDictNodeEncoder, TypeDictEdgeE
 from GNNPlus.encoder.linear_node_encoder import LinearNodeEncoder
 from GNNPlus.encoder.equivstable_laplace_pos_encoder import EquivStableLapPENodeEncoder
 from GNNPlus.encoder.graphormer_encoder import GraphormerEncoder
+from GNNPlus.encoder.custom_pe_encoder import DinoEncoder
 
 
 def concat_node_encoders(encoder_classes, pe_enc_names):
@@ -51,9 +52,11 @@ def concat_node_encoders(encoder_classes, pe_enc_names):
 
                 # self.encoder1 = self.enc1_cls(dim_emb - enc2_dim_pe)
                 # self.encoder2 = self.enc2_cls(dim_emb, expand_x=False)
+         
             enc2_dim_pe = getattr(cfg, f"posenc_{self.enc2_name}").dim_pe
             self.encoder1 = self.enc1_cls(dim_emb - enc2_dim_pe)
             self.encoder2 = self.enc2_cls(dim_emb, expand_x=False)
+            
             
         def forward(self, batch):
             batch = self.encoder1(batch)
@@ -118,7 +121,8 @@ pe_encs = {'LapPE': LapPENodeEncoder,
            'ElstaticSE': ElstaticSENodeEncoder,
            'SignNet': SignNetNodeEncoder,
            'EquivStableLapPE': EquivStableLapPENodeEncoder,
-           'GraphormerBias': GraphormerEncoder}
+           'GraphormerBias': GraphormerEncoder,
+           'Dino':DinoEncoder}
 
 # Concat dataset-specific and PE encoders.
 for ds_enc_name, ds_enc_cls in ds_encs.items():

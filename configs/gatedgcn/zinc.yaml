@@ -2,8 +2,10 @@ out_dir: results
 metric_best: mae
 metric_agg: argmin
 wandb:
-  use: False
+  use: True
   project: ZINC
+  name: test
+  entity: kisinberke 
 dataset:
   format: PyG-ZINC
   name: subset

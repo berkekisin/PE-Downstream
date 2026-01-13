@@ -3,7 +3,51 @@ import logging
 import torch
 from torch_geometric.utils import subgraph
 from tqdm import tqdm
+import os 
+from tqdm import tqdm
+from torch_geometric.data import InMemoryDataset
 
+from GNNPlus.transform.add_dinov_pe import AddDinovPE
+
+def save_embeddings(dataset, emb_name, emb_folder):
+    os.makedirs(os.path.normpath(emb_folder), exist_ok=True)
+    emb = getattr(dataset.data, emb_name)
+    slices = dataset.slices[emb_name]
+    torch.save(emb, os.path.join(emb_folder, 'data.pt'))
+    torch.save(slices, os.path.join(emb_folder, 'slices.pt'))
+    
+def precompute_dino(cfg, dataset, attr_name = 'pestat_Dino'):
+    dataset_folder = cfg.dataset.dir
+    dataset_name = cfg.dataset.format.split("-", 1)[1]
+    emb_save_folder = os.path.join(dataset_folder, dataset_name, cfg.posenc_Dino.save_folder )
+    
+    # load precomputed emb
+    if os.path.isdir(emb_save_folder):
+        print('Found precomputed dino embedding!')
+        emb = torch.load(os.path.join(os.path.normpath(emb_save_folder), 'data.pt'), map_location="cpu")
+        slices = torch.load(os.path.join(os.path.normpath(emb_save_folder), 'slices.pt'), map_location="cpu")
+        #setattr(dataset, attr_name, emb)
+        dataset.data[attr_name] = emb
+        dataset.slices[attr_name] = slices
+    else:
+        transform_func = AddDinovPE(model_name=cfg.posenc_Dino.model_name,
+                                attr_name=attr_name,
+                                aggr=cfg.posenc_Dino.aggr)
+        data_list = []
+        for i in tqdm(range(len(dataset)), desc='Embeddings not found precomputing!'):
+            data = dataset.get(i) 
+            
+            data = transform_func(data)
+            data_list.append(data)
+            
+            
+        dataset._indices = None
+        dataset._data_list = data_list
+        dataset.data, dataset.slices = InMemoryDataset.collate(data_list)
+        
+        save_embeddings(dataset, emb_name=attr_name, emb_folder=emb_save_folder)
+        
+    return dataset
 
 def pre_transform_in_memory(dataset, transform_func, show_progress=False):
     """Pre-transform already loaded PyG dataset object.
@@ -23,17 +67,21 @@ def pre_transform_in_memory(dataset, transform_func, show_progress=False):
     """
     if transform_func is None:
         return dataset
+     
+    cfg = transform_func.keywords['cfg']
+    if cfg.posenc_Dino.enable:
+        dataset = precompute_dino(cfg, dataset)
+    else:
+        data_list = [transform_func(dataset.get(i))
+                        for i in tqdm(range(len(dataset)),
+                                    disable=not show_progress,
+                                    mininterval=10,
+                                    miniters=len(dataset)//20)]
+        data_list = list(filter(None, data_list))
 
-    data_list = [transform_func(dataset.get(i))
-                 for i in tqdm(range(len(dataset)),
-                               disable=not show_progress,
-                               mininterval=10,
-                               miniters=len(dataset)//20)]
-    data_list = list(filter(None, data_list))
-
-    dataset._indices = None
-    dataset._data_list = data_list
-    dataset.data, dataset.slices = dataset.collate(data_list)
+        dataset._indices = None
+        dataset._data_list = data_list
+        dataset.data, dataset.slices = dataset.collate(data_list)
 
 
 def typecast_x(data, type_str):

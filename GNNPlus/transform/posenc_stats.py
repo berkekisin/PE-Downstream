@@ -10,6 +10,7 @@ from torch_geometric.utils.num_nodes import maybe_num_nodes
 from GNNPlus.encoder.graphormer_encoder import graphormer_pre_processing
 
 
+
 def compute_posenc_stats(data, pe_types, is_undirected, cfg):
     """Precompute positional encodings for the given graph.
 
@@ -32,9 +33,10 @@ def compute_posenc_stats(data, pe_types, is_undirected, cfg):
         Extended PyG Data object.
     """
     # Verify PE types.
+    
     for t in pe_types:
         if t not in ['LapPE', 'EquivStableLapPE', 'SignNet', 'RWSE', 'HKdiagSE',
-                     'HKfullPE', 'ElstaticSE', 'GraphormerBias']:
+                     'HKfullPE', 'ElstaticSE', 'GraphormerBias', 'Dino']:
             raise ValueError(f"Unexpected PE stats selection {t} in {pe_types}")
 
     # Basic preprocessing of the input graph.
@@ -49,7 +51,7 @@ def compute_posenc_stats(data, pe_types, is_undirected, cfg):
         undir_edge_index = data.edge_index
     else:
         undir_edge_index = to_undirected(data.edge_index)
-
+    
     # Eigen values and vectors.
     evals, evects = None, None
     if 'LapPE' in pe_types or 'EquivStableLapPE' in pe_types:

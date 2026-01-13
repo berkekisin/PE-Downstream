@@ -117,8 +117,11 @@ class TypeDictEdgeEncoder(torch.nn.Module):
         
         if cfg.dataset.node_encoder_name == 'TypeDictNode+RWSE':
             part_edge = batch.edge_attr[:, 1:]
-            
-        batch.edge_attr = self.encoder(batch.edge_attr[:,0].long())
+        
+        try:    
+            batch.edge_attr = self.encoder(batch.edge_attr[:,0].long())
+        except:
+            batch.edge_attr = self.encoder(batch.edge_attr.long())
         
         if cfg.dataset.node_encoder_name == 'TypeDictNode+RWSE':
             remaining_encoded = self.encoder2(part_edge)

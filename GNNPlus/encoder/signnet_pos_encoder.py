@@ -178,17 +178,6 @@ class SignNetNodeEncoder(torch.nn.Module):
     https://arxiv.org/abs/2202.13013
     https://github.com/cptq/SignNet-BasisNet
 
-    Uses precomputated Laplacian eigen-decomposition, but instead
-    of eigen-vector sign flipping + DeepSet/Transformer, computes the PE as:
-    SignNetPE(v_1, ... , v_k) = \rho ( [\phi(v_i) + \rhi(−v_i)]^k_i=1 )
-    where \phi is GIN network applied to k first non-trivial eigenvectors, and
-    \rho is an MLP if k is a constant, but if all eigenvectors are used then
-    \rho is DeepSet with sum-pooling.
-
-    SignNetPE of size dim_pe will get appended to each node feature vector.
-    If `expand_x` set True, original node features will be first linearly
-    projected to (dim_emb - dim_pe) size and the concatenated with SignNetPE.
-
     Args:
         dim_emb: Size of final node embedding
         expand_x: Expand node features `x` from dim_in to (dim_emb - dim_pe)

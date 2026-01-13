@@ -11,13 +11,35 @@ def set_cfg_posenc(cfg):
     # cfg.posenc_LapPE = CN()
     # cfg.posenc_SignNet = CN()
     cfg.posenc_RWSE = CN()
+    cfg.posenc_Dino = CN()
     # cfg.posenc_HKdiagSE = CN()
     # cfg.posenc_ElstaticSE = CN()
     # cfg.posenc_EquivStableLapPE = CN()
 
-    # Common arguments to all PE types.
-    # for name in ['posenc_LapPE', 'posenc_SignNet',
-    #              'posenc_RWSE', 'posenc_HKdiagSE', 'posenc_ElstaticSE']:
+  
+    # set dinov cfg
+    pecfg = getattr(cfg, 'posenc_Dino')
+    pecfg.enable = False
+    pecfg.model = 'none'
+    pecfg.layers = 3
+    pecfg.model_name = ''
+    pecfg.aggr = ''
+    pecfg.save_folder = ''
+    pecfg.attr_name = ''
+    pecfg.dim_pe = 0
+    pecfg.dim_pe_in = 0
+
+    # Number of attention heads in PE encoder when model == 'Transformer'
+    pecfg.n_heads = 4
+
+    # Choice of normalization applied to raw PE stats: 'none', 'BatchNorm'
+    pecfg.raw_norm_type = 'none'
+
+    # In addition to appending PE to the node features, pass them also as
+    # a separate variable in the PyG graph batch object.
+    pecfg.pass_as_var = False
+    
+    
     for name in ['posenc_RWSE']:
         pecfg = getattr(cfg, name)
 
