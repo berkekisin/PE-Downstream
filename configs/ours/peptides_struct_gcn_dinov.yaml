@@ -3,22 +3,20 @@ metric_best: mae
 metric_agg: argmin
 wandb:
   use: True
-  project: ZINC
-  name: test
+  project: PE_PLUS
+  name: peptides_struct_gcn_dino
   entity: kisinberke 
 dataset:
-  format: PyG-ZINC
-  name: subset
+  format: OGB
+  name: peptides-structural
   task: graph
   task_type: regression
   transductive: False
   node_encoder: True
-  node_encoder_name: TypeDictNode+Dino
-  node_encoder_num_types: 21
+  node_encoder_name: Atom+Dino
   node_encoder_bn: False
   edge_encoder: True
-  edge_encoder_name: TypeDictEdge
-  edge_encoder_num_types: 4
+  edge_encoder_name: Bond
   edge_encoder_bn: False
 posenc_Dino:
   enable: True
@@ -34,30 +32,27 @@ train:
   batch_size: 32
   eval_period: 1
   ckpt_period: 100
+  eval_smoothing_metrics: False
 model:
   type: custom_gnn
   loss_fun: l1
-  edge_decoding: dot
-  graph_pooling: add
+  graph_pooling: mean
 gnn:
-  head: san_graph
-  layer_type: gatedgcn
-  layers_mp: 9
+  head: mlp_graph
+  ffn: False
   layers_pre_mp: 0
+  layers_mp: 5
   layers_post_mp: 3
-  dim_inner: 70
-  act: relu
-  dropout: 0.05
-  agg: mean
-  normalize_adj: False
-  ffn: True
-  residual: True
+  dim_inner: 255
+  layer_type: gcn
+  act: gelu
+  residual: False
+  dropout: 0.2
 optim:
   clip_grad_norm: True
   optimizer: adamW
-  weight_decay: 1e-5
+  weight_decay: 0.0
   base_lr: 0.001
-  max_epoch: 2000
+  max_epoch: 300
   scheduler: cosine_with_warmup
-  num_warmup_epochs: 50
-  min_lr: 1e-6
+  num_warmup_epochs: 5

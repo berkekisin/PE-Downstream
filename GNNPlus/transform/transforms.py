@@ -18,7 +18,7 @@ def save_embeddings(dataset, emb_name, emb_folder):
     
 def precompute_dino(cfg, dataset, attr_name = 'pestat_Dino'):
     dataset_folder = cfg.dataset.dir
-    dataset_name = cfg.dataset.format.split("-", 1)[1]
+    dataset_name = cfg.dataset.name
     emb_save_folder = os.path.join(dataset_folder, dataset_name, cfg.posenc_Dino.save_folder )
     
     # load precomputed emb
@@ -29,6 +29,14 @@ def precompute_dino(cfg, dataset, attr_name = 'pestat_Dino'):
         #setattr(dataset, attr_name, emb)
         dataset.data[attr_name] = emb
         dataset.slices[attr_name] = slices
+        data_list = []
+        for i in tqdm(range(len(dataset)), desc='Embeddings not found precomputing!'):
+            data = dataset.get(i) 
+            data_list.append(data)
+            
+        dataset._indices = None
+        dataset._data_list = data_list
+        dataset.data, dataset.slices = dataset.collate(data_list)    
     else:
         transform_func = AddDinovPE(model_name=cfg.posenc_Dino.model_name,
                                 attr_name=attr_name,
@@ -36,14 +44,13 @@ def precompute_dino(cfg, dataset, attr_name = 'pestat_Dino'):
         data_list = []
         for i in tqdm(range(len(dataset)), desc='Embeddings not found precomputing!'):
             data = dataset.get(i) 
-            
             data = transform_func(data)
             data_list.append(data)
             
             
         dataset._indices = None
         dataset._data_list = data_list
-        dataset.data, dataset.slices = InMemoryDataset.collate(data_list)
+        dataset.data, dataset.slices = dataset.collate(data_list)
         
         save_embeddings(dataset, emb_name=attr_name, emb_folder=emb_save_folder)
         
@@ -68,9 +75,10 @@ def pre_transform_in_memory(dataset, transform_func, show_progress=False):
     if transform_func is None:
         return dataset
      
-    cfg = transform_func.keywords['cfg']
-    if cfg.posenc_Dino.enable:
-        dataset = precompute_dino(cfg, dataset)
+    if transform_func.func.__name__ == 'compute_posenc_stats':
+        if 'Dino' in transform_func.keywords['pe_types']:
+            cfg = transform_func.keywords['cfg']
+            precompute_dino(cfg, dataset)
     else:
         data_list = [transform_func(dataset.get(i))
                         for i in tqdm(range(len(dataset)),
@@ -82,6 +90,8 @@ def pre_transform_in_memory(dataset, transform_func, show_progress=False):
         dataset._indices = None
         dataset._data_list = data_list
         dataset.data, dataset.slices = dataset.collate(data_list)
+        
+    return
 
 
 def typecast_x(data, type_str):

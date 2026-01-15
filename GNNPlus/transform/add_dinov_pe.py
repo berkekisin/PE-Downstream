@@ -18,7 +18,7 @@ class AddDinovPE(BaseTransform):
         context_size = 1024
         vocab_size = 20000 + 3
         config = load_llama_model(vocab_size, context_size)
-        model = DINOModel.from_pretrained(model_name, config=config, token=None)
+        
         self.embedding_model = model.eval()
         self.attr_name = attr_name
         self.aggr = aggr
